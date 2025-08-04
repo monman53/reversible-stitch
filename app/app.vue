@@ -5,7 +5,7 @@ import { dither, solve } from "./utils";
 
 const width = 200;
 const height = 200;
-const n = 800;
+const n = 1000;
 
 const answer = ref([{ i: 0, j: 0 }]);
 

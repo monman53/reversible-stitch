@@ -176,13 +176,15 @@ export const solve = (
   height: number,
   frontImg: number[][],
   backImg: number[][],
-  n: number
+  n: number,
+  maxItr: number = 10000000
 ) => {
   // Inisialize answer with random positions
   const answer: { i: number; j: number }[] = [];
   for (let i = 0; i < n; i++) {
     answer.push({ i: randomInt(0, height - 1), j: randomInt(0, width - 1) });
   }
+  const bestAnswer = answer.map((p) => ({ ...p })); // Keep a copy of the best answer
   // Create images from the answer
   let [imgFront, imgBack, frontSim, backSim] = createImageFromAnswer(
     frontImg,
@@ -191,10 +193,20 @@ export const solve = (
     width,
     height
   );
-  let frontSimilarityOld = evalSimilarity(imgFront, frontImg, width, height);
-  let backSimilarityOld = evalSimilarity(imgBack, backImg, width, height);
+  const frontSimilarityInitial = evalSimilarity(
+    imgFront,
+    frontImg,
+    width,
+    height
+  );
+  const backSimilarityInitial = evalSimilarity(imgBack, backImg, width, height);
+  let similarityOld = frontSimilarityInitial + backSimilarityInitial;
+  let bestSimilarity = similarityOld;
 
-  for (let iter = 0; iter < 4000000; iter++) {
+  for (let iter = 0; iter < maxItr; iter++) {
+    if (iter % 1000 === 0) {
+      console.log(`Iteration ${iter}, Similarity: ${bestSimilarity}`);
+    }
     // Randomly select point and move it to a neighboring point
     const idx = randomInt(0, n - 1);
     const oldPoint = answer[idx];
@@ -249,18 +261,26 @@ export const solve = (
     ); // Add new edge
     const dAfterSimFront = dAfterSimFront1 + dAfterSimFront2;
     const dAfterSimBack = dAfterSimBack1 + dAfterSimBack2;
-    const frontSimilarityNew =
-      frontSimilarityOld + dBeforeSimFront + dAfterSimFront;
-    const backSimilarityNew =
-      backSimilarityOld + dBeforeSimBack + dAfterSimBack;
+    const frontSimilarityNew = dBeforeSimFront + dAfterSimFront;
+    const backSimilarityNew = dBeforeSimBack + dAfterSimBack;
+    const similarityNew =
+      similarityOld + frontSimilarityNew + backSimilarityNew;
     // If the new image is better, keep it
+    const energyDiff = (similarityOld - similarityNew) / (width * height);
     if (
-      frontSimilarityNew + backSimilarityNew >
-      frontSimilarityOld + backSimilarityOld
+      energyDiff < 0 ||
+      Math.random() <
+        Math.exp(-energyDiff / Math.pow(0.00000001, iter / maxItr))
     ) {
-      frontSimilarityOld = frontSimilarityNew;
-      backSimilarityOld = backSimilarityNew;
-      console.log(iter, frontSimilarityNew + backSimilarityNew);
+      // if (energyDiff < 0) {
+      similarityOld = similarityNew;
+      if (similarityNew > bestSimilarity) {
+        bestSimilarity = similarityNew;
+        bestAnswer.forEach((p, i) => {
+          p.i = answer[i].i;
+          p.j = answer[i].j;
+        });
+      }
     } else {
       // Otherwise, revert the change
       drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, -1); // Revert new edge
@@ -271,5 +291,5 @@ export const solve = (
     }
   }
 
-  return answer;
+  return bestAnswer;
 };
