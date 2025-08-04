@@ -1,38 +1,13 @@
 <script setup lang="ts">
 // Load image and resize to 200x200 and draw into canvas
 import { onMounted } from "vue";
+import { dither, solve } from "./utils";
 
 const width = 200;
 const height = 200;
+const n = 100;
 
-// Apply binary Floyd–Steinberg dithering
-const dither = (imageData: ImageData): ImageData => {
-  const data = imageData.data;
-  const width = imageData.width;
-  const height = imageData.height;
-
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const index = (y * width + x) * 4;
-      const oldPixel = data[index];
-      const newPixel = oldPixel < 128 ? 0 : 255;
-      data[index] = newPixel; // R
-      data[index + 1] = newPixel; // G
-      data[index + 2] = newPixel; // B
-      data[index + 3] = 255; // A
-
-      const error = oldPixel - newPixel;
-      if (x + 1 < width) data[index + 4] += (error * 7) / 16; // right
-      if (x - 1 >= 0 && y + 1 < height)
-        data[index + width * 4 - 4] += (error * 3) / 16; // bottom left
-      if (y + 1 < height) data[index + width * 4] += (error * 5) / 16; // bottom
-      if (x + 1 < width && y + 1 < height)
-        data[index + width * 4 + 4] += (error * 1) / 16; // bottom right
-    }
-  }
-
-  return imageData;
-};
+const answer = ref([{ i: 0, j: 0 }]);
 
 onMounted(() => {
   {
@@ -65,17 +40,57 @@ onMounted(() => {
       ctx.putImageData(ditheredImageData, 0, 0);
     };
   }
+  answer.value = solve(width, height, null, null, n);
 });
+
+const onClickSolve = () => {
+  console.log("onClick");
+  answer.value = solve(width, height, null, null, n);
+};
 </script>
 <template>
   <div>
     <h1>Reversible stitch</h1>
-    <canvas id="front-ref" ref="front-ref" :width :height></canvas>
-    <canvas id="back-ref" ref="back-ref" :width :height></canvas>
+    <div>
+      <canvas id="front-ref" ref="front-ref" :width :height></canvas>
+      <canvas id="back-ref" ref="back-ref" :width :height></canvas>
+    </div>
+    <button @click="onClickSolve">Solve</button>
+    <div>
+      <svg viewBox="0 0 200 200">
+        <g v-for="(item, index) in answer" :key="index">
+          <line
+            v-if="index > 0 && index % 2 === 1"
+            :x1="answer[index-1]!.j"
+            :y1="answer[index-1]!.i"
+            :x2="answer[index]!.j"
+            :y2="answer[index]!.i"
+            stroke="black"
+          ></line>
+        </g>
+      </svg>
+      <svg viewBox="0 0 200 200">
+        <g v-for="(item, index) in answer" :key="index">
+          <line
+            v-if="index > 0 && index % 2 === 0"
+            :x1="answer[index-1]!.j"
+            :y1="answer[index-1]!.i"
+            :x2="answer[index]!.j"
+            :y2="answer[index]!.i"
+            stroke="black"
+          ></line>
+        </g>
+      </svg>
+    </div>
   </div>
 </template>
 <style>
 canvas {
+  width: 400px;
+  height: 400px;
+  image-rendering: pixelated;
+}
+svg {
   width: 400px;
   height: 400px;
 }
