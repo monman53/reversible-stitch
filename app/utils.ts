@@ -204,7 +204,7 @@ export const solve = (
   let bestSimilarity = similarityOld;
 
   for (let iter = 0; iter < maxItr; iter++) {
-    if (iter % 1000 === 0) {
+    if (iter % 10000 === 0) {
       console.log(`Iteration ${iter}, Similarity: ${bestSimilarity}`);
     }
     // Randomly select point and move it to a neighboring point

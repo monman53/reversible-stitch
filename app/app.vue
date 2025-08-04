@@ -5,7 +5,7 @@ import { dither, solve } from "./utils";
 
 const width = 200;
 const height = 200;
-const n = 1000;
+const n = 800;
 
 const answer = ref([{ i: 0, j: 0 }]);
 
@@ -119,7 +119,7 @@ svg {
   height: 400px;
 }
 line {
-  stroke-width: 0.5;
+  stroke-width: 0.7;
   stroke-linecap: round;
 }
 </style>
