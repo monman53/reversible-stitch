@@ -79,6 +79,26 @@ const drawLine = (
   }
 };
 
+const drawEdge = (
+  imgFront: number[][],
+  imgBack: number[][],
+  answer: { i: number; j: number }[],
+  idx1: number,
+  idx2: number,
+  diff: number
+): void => {
+  if (idx1 < 0 || idx2 < 0 || idx1 >= answer.length || idx2 >= answer.length) {
+    return;
+  }
+  const { i: i1, j: j1 } = answer[idx1];
+  const { i: i2, j: j2 } = answer[idx2];
+  if (idx1 % 2 === 0) {
+    drawLine(imgFront, i1, j1, i2, j2, diff);
+  } else {
+    drawLine(imgBack, i1, j1, i2, j2, diff);
+  }
+};
+
 const createImageFromAnswer = (
   answer: { i: number; j: number }[],
   width: number,
@@ -92,13 +112,7 @@ const createImageFromAnswer = (
   );
 
   for (let i = 0; i < answer.length - 1; i++) {
-    const { i: i1, j: j1 } = answer[i];
-    const { i: i2, j: j2 } = answer[i + 1];
-    if (i % 2 === 0) {
-      drawLine(imgFront, i1, j1, i2, j2, +1);
-    } else {
-      drawLine(imgBack, i1, j1, i2, j2, +1);
-    }
+    drawEdge(imgFront, imgBack, answer, i, i + 1, +1);
   }
 
   return [imgFront, imgBack];
@@ -138,6 +152,9 @@ export const solve = (
   }
   // Create images from the answer
   let [imgFront, imgBack] = createImageFromAnswer(answer, width, height);
+  let similarityOld =
+    evalSimilarity(imgFront, frontImg, width, height) +
+    evalSimilarity(imgBack, backImg, width, height);
 
   for (let iter = 0; iter < 10000; iter++) {
     // Randomly select point and move it to a neighboring point
@@ -149,28 +166,25 @@ export const solve = (
       i: randomInt(0, height - 1),
       j: randomInt(0, width - 1),
     };
+    drawEdge(imgFront, imgBack, answer, idx - 1, idx, -1); // Remove old edge
+    drawEdge(imgFront, imgBack, answer, idx, idx + 1, -1); // Remove old edge
     answer[idx] = newPoint;
-    // Create new image from the updated answer
-    const [newImgFront, newImgBack] = createImageFromAnswer(
-      answer,
-      width,
-      height
-    );
+    drawEdge(imgFront, imgBack, answer, idx - 1, idx, +1); // Add new edge
+    drawEdge(imgFront, imgBack, answer, idx, idx + 1, +1); // Add new edge
     // Evaluate similarity with the front and back images
-    const similarity =
-      evalSimilarity(newImgFront, frontImg, width, height) +
-      evalSimilarity(newImgBack, backImg, width, height);
-    // If the new image is better, keep it
-    if (
-      similarity >
+    const similarityNew =
       evalSimilarity(imgFront, frontImg, width, height) +
-        evalSimilarity(imgBack, backImg, width, height)
-    ) {
-      //   img.splice(0, img.length, ...newImg);
-      imgFront = newImgFront;
-      imgBack = newImgBack;
+      evalSimilarity(imgBack, backImg, width, height);
+    // If the new image is better, keep it
+    if (similarityNew > similarityOld) {
+      similarityOld = similarityNew;
     } else {
+      // Otherwise, revert the change
+      drawEdge(imgFront, imgBack, answer, idx - 1, idx, -1); // Revert new edge
+      drawEdge(imgFront, imgBack, answer, idx, idx + 1, -1); // Revert new edge
       answer[idx] = oldPoint; // Revert the change
+      drawEdge(imgFront, imgBack, answer, idx - 1, idx, +1); // Re-add old edge
+      drawEdge(imgFront, imgBack, answer, idx, idx + 1, +1); // Re-add old edge
     }
   }
 
