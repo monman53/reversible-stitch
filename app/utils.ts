@@ -156,7 +156,7 @@ export const solve = (
     evalSimilarity(imgFront, frontImg, width, height) +
     evalSimilarity(imgBack, backImg, width, height);
 
-  for (let iter = 0; iter < 10000; iter++) {
+  for (let iter = 0; iter < 100000; iter++) {
     // Randomly select point and move it to a neighboring point
     const idx = randomInt(0, n - 1);
     const oldPoint = answer[idx];
