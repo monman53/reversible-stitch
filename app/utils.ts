@@ -39,12 +39,13 @@ const clop = (value: number, min: number, max: number): number => {
 // Draw a line using Bresenham's algorithm
 const drawLine = (
   img: number[][],
+  refImg: number[][],
   i1: number,
   j1: number,
   i2: number,
   j2: number,
   diff: number
-): void => {
+): number => {
   let currentI = i1;
   let currentJ = j1;
   const di = Math.abs(i2 - i1);
@@ -55,6 +56,7 @@ const drawLine = (
   const height = img.length;
   if (height === 0) return;
   const width = img[0].length;
+  let similarity = 0;
   while (true) {
     if (
       currentI >= 0 &&
@@ -63,6 +65,9 @@ const drawLine = (
       currentJ < width
     ) {
       img[currentI][currentJ] += diff;
+      similarity += -Math.abs(
+        img[currentI][currentJ] - refImg[currentI][currentJ]
+      );
     }
     if (currentI === i2 && currentJ === j2) {
       break;
@@ -77,29 +82,36 @@ const drawLine = (
       currentI += stepI;
     }
   }
+  return similarity;
 };
 
 const drawEdge = (
   imgFront: number[][],
   imgBack: number[][],
+  imgFrontRef: number[][],
+  imgBackRef: number[][],
   answer: { i: number; j: number }[],
   idx1: number,
   idx2: number,
   diff: number
-): void => {
+): number[] => {
   if (idx1 < 0 || idx2 < 0 || idx1 >= answer.length || idx2 >= answer.length) {
     return;
   }
   const { i: i1, j: j1 } = answer[idx1];
   const { i: i2, j: j2 } = answer[idx2];
   if (idx1 % 2 === 0) {
-    drawLine(imgFront, i1, j1, i2, j2, diff);
+    const similarity = drawLine(imgFront, imgFrontRef, i1, j1, i2, j2, diff);
+    return [similarity, 0];
   } else {
-    drawLine(imgBack, i1, j1, i2, j2, diff);
+    const similarity = drawLine(imgBack, imgBackRef, i1, j1, i2, j2, diff);
+    return [0, similarity];
   }
 };
 
 const createImageFromAnswer = (
+  imgFrontRef: number[][],
+  imgBackRef: number[][],
   answer: { i: number; j: number }[],
   width: number,
   height: number
@@ -112,7 +124,7 @@ const createImageFromAnswer = (
   );
 
   for (let i = 0; i < answer.length - 1; i++) {
-    drawEdge(imgFront, imgBack, answer, i, i + 1, +1);
+    drawEdge(imgFront, imgBack, imgFrontRef, imgBackRef, answer, i, i + 1, +1);
   }
 
   return [imgFront, imgBack];
@@ -127,15 +139,10 @@ const evalSimilarity = (
   let similarity = 0;
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
-      if (
-        (img1[i][j] > 0 && img2[i][j] > 0) ||
-        (img1[i][j] === 0 && img2[i][j] === 0)
-      ) {
-        similarity++;
-      }
+      similarity += -Math.abs(img1[i][j] - img2[i][j]);
     }
   }
-  return similarity / (width * height);
+  return similarity;
 };
 
 export const solve = (
@@ -151,10 +158,15 @@ export const solve = (
     answer.push({ i: randomInt(0, height - 1), j: randomInt(0, width - 1) });
   }
   // Create images from the answer
-  let [imgFront, imgBack] = createImageFromAnswer(answer, width, height);
-  let similarityOld =
-    evalSimilarity(imgFront, frontImg, width, height) +
-    evalSimilarity(imgBack, backImg, width, height);
+  let [imgFront, imgBack] = createImageFromAnswer(
+    frontImg,
+    backImg,
+    answer,
+    width,
+    height
+  );
+  let frontSimilarityOld = evalSimilarity(imgFront, frontImg, width, height);
+  let backSimilarityOld = evalSimilarity(imgBack, backImg, width, height);
 
   for (let iter = 0; iter < 100000; iter++) {
     // Randomly select point and move it to a neighboring point
@@ -166,25 +178,29 @@ export const solve = (
       i: randomInt(0, height - 1),
       j: randomInt(0, width - 1),
     };
-    drawEdge(imgFront, imgBack, answer, idx - 1, idx, -1); // Remove old edge
-    drawEdge(imgFront, imgBack, answer, idx, idx + 1, -1); // Remove old edge
+    drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, -1); // Remove old edge
+    drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx, idx + 1, -1); // Remove old edge
     answer[idx] = newPoint;
-    drawEdge(imgFront, imgBack, answer, idx - 1, idx, +1); // Add new edge
-    drawEdge(imgFront, imgBack, answer, idx, idx + 1, +1); // Add new edge
+    drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, +1); // Add new edge
+    drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx, idx + 1, +1); // Add new edge
     // Evaluate similarity with the front and back images
-    const similarityNew =
-      evalSimilarity(imgFront, frontImg, width, height) +
-      evalSimilarity(imgBack, backImg, width, height);
+    let frontSimilarityNew = evalSimilarity(imgFront, frontImg, width, height);
+    let backSimilarityNew = evalSimilarity(imgBack, backImg, width, height);
     // If the new image is better, keep it
-    if (similarityNew > similarityOld) {
-      similarityOld = similarityNew;
+    if (
+      frontSimilarityNew + backSimilarityNew >
+      frontSimilarityOld + backSimilarityOld
+    ) {
+      frontSimilarityOld = frontSimilarityNew;
+      backSimilarityOld = backSimilarityNew;
+      console.log(iter, frontSimilarityNew + backSimilarityNew);
     } else {
       // Otherwise, revert the change
-      drawEdge(imgFront, imgBack, answer, idx - 1, idx, -1); // Revert new edge
-      drawEdge(imgFront, imgBack, answer, idx, idx + 1, -1); // Revert new edge
+      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, -1); // Revert new edge
+      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx, idx + 1, -1); // Revert new edge
       answer[idx] = oldPoint; // Revert the change
-      drawEdge(imgFront, imgBack, answer, idx - 1, idx, +1); // Re-add old edge
-      drawEdge(imgFront, imgBack, answer, idx, idx + 1, +1); // Re-add old edge
+      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, +1); // Re-add old edge
+      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx, idx + 1, +1); // Re-add old edge
     }
   }
 
