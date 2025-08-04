@@ -32,6 +32,102 @@ const randomInt = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+const clop = (value: number, min: number, max: number): number => {
+  return Math.max(min, Math.min(max, value));
+};
+
+// Draw a line using Bresenham's algorithm
+const drawLine = (
+  img: number[][],
+  i1: number,
+  j1: number,
+  i2: number,
+  j2: number
+): void => {
+  let currentI = i1;
+  let currentJ = j1;
+
+  const di = Math.abs(i2 - i1);
+  const dj = Math.abs(j2 - j1);
+
+  const stepI = i1 < i2 ? 1 : -1;
+  const stepJ = j1 < j2 ? 1 : -1;
+
+  // 誤差項 (Error term)
+  // この実装では、dx - dy を初期値とする一般的なバリエーションを採用
+  let err = dj - di;
+
+  const height = img.length;
+  if (height === 0) return;
+  const width = img[0].length;
+
+  while (true) {
+    // 座標が画像の範囲内にあるかチェックして描画
+    if (
+      currentI >= 0 &&
+      currentI < height &&
+      currentJ >= 0 &&
+      currentJ < width
+    ) {
+      img[currentI][currentJ] = 1;
+    }
+
+    // 終点に達したらループを終了
+    if (currentI === i2 && currentJ === j2) {
+      break;
+    }
+
+    const e2 = 2 * err;
+
+    // 次のj座標を決定
+    if (e2 >= -di) {
+      err -= di;
+      currentJ += stepJ;
+    }
+
+    // 次のi座標を決定
+    if (e2 <= dj) {
+      err += dj;
+      currentI += stepI;
+    }
+  }
+};
+
+const createImageFromAnswer = (
+  answer: { i: number; j: number }[],
+  width: number,
+  height: number
+): number[][] => {
+  const img: number[][] = Array.from({ length: height }, () =>
+    Array(width).fill(0)
+  );
+
+  for (let i = 0; i < answer.length - 1; i++) {
+    const { i: i1, j: j1 } = answer[i];
+    const { i: i2, j: j2 } = answer[i + 1];
+    drawLine(img, i1, j1, i2, j2);
+  }
+
+  return img;
+};
+
+const evalSimilarity = (
+  img1: number[][],
+  img2: number[][],
+  width: number,
+  height: number
+): number => {
+  let similarity = 0;
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
+      if (img1[i][j] === img2[i][j]) {
+        similarity++;
+      }
+    }
+  }
+  return similarity / (width * height);
+};
+
 export const solve = (
   width: number,
   height: number,
@@ -39,13 +135,37 @@ export const solve = (
   backImg: number[][],
   n: number
 ) => {
-  const answer: { i: number; j: number }[] = Array(n).fill({ i: 0, j: 0 });
   // Inisialize answer with random positions
+  const answer: { i: number; j: number }[] = [];
   for (let i = 0; i < n; i++) {
-    answer[i] = {
-      i: randomInt(0, width - 1),
-      j: randomInt(0, height - 1),
-    };
+    answer.push({ i: randomInt(0, height - 1), j: randomInt(0, width - 1) });
   }
+  // Create images from the answer
+  let img = createImageFromAnswer(answer, width, height);
+
+  for (let iter = 0; iter < 10000; iter++) {
+    // Randomly select point and move it to a neighboring point
+    const idx = randomInt(0, n - 1);
+    const oldPoint = answer[idx];
+    const newPoint = {
+      //   i: clop(oldPoint.i + randomInt(-1, 1), 0, height - 1),
+      //   j: clop(oldPoint.j + randomInt(-1, 1), 0, width - 1),
+      i: randomInt(0, height - 1),
+      j: randomInt(0, width - 1),
+    };
+    answer[idx] = newPoint;
+    // Create new image from the updated answer
+    const newImg = createImageFromAnswer(answer, width, height);
+    // Evaluate similarity with the front and back images
+    const similarity = evalSimilarity(newImg, frontImg, width, height);
+    // If the new image is better, keep it
+    if (similarity > evalSimilarity(img, frontImg, width, height)) {
+      //   img.splice(0, img.length, ...newImg);
+      img = newImg;
+    } else {
+      answer[idx] = oldPoint; // Revert the change
+    }
+  }
+
   return answer;
 };
