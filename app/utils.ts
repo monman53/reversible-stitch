@@ -249,9 +249,6 @@ export const solve = (
     ); // Add new edge
     const dAfterSimFront = dAfterSimFront1 + dAfterSimFront2;
     const dAfterSimBack = dAfterSimBack1 + dAfterSimBack2;
-    // Evaluate similarity with the front and back images
-    // let frontSimilarityNew = evalSimilarity(imgFront, frontImg, width, height);
-    // let backSimilarityNew = evalSimilarity(imgBack, backImg, width, height);
     const frontSimilarityNew =
       frontSimilarityOld + dBeforeSimFront + dAfterSimFront;
     const backSimilarityNew =
