@@ -65,7 +65,7 @@ onMounted(() => {
       ctx.putImageData(ditheredImageData, 0, 0);
     };
   }
-  answer.value = solve(width, height, frontImg, backImg, n);
+  // answer.value = solve(width, height, frontImg, backImg, n);
 });
 
 const onClickSolve = () => {
@@ -80,20 +80,6 @@ const onClickSolve = () => {
       <canvas id="back-ref" ref="back-ref" :width :height></canvas>
     </div>
     <button @click="onClickSolve">Solve</button>
-    <div>
-      <svg viewBox="0 0 200 200">
-        <g v-for="(item, index) in answer" :key="index">
-          <line
-            v-if="index > 0"
-            :x1="answer[index-1]!.j"
-            :y1="answer[index-1]!.i"
-            :x2="answer[index]!.j"
-            :y2="answer[index]!.i"
-            stroke="black"
-          ></line>
-        </g>
-      </svg>
-    </div>
     <div>
       <svg viewBox="0 0 200 200">
         <g v-for="(item, index) in answer" :key="index">
