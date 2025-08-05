@@ -246,7 +246,6 @@ export const solve = async (
     const idx = randomInt(0, n - 1);
     const oldPoint = answer[idx]!;
     const stdDev = (1 - t) * 15 + 2;
-    // const stdDev = 20;
     const newPoint = {
       i: clop(Math.round(randomNormal(oldPoint.i, stdDev)), 0, height - 1),
       j: clop(Math.round(randomNormal(oldPoint.j, stdDev)), 0, width - 1),
