@@ -129,6 +129,14 @@ const onClickSolve = async () => {
   <div>
     <h1>Reversible stitch</h1>
     <div>
+      <canvas id="front-ref" ref="front-ref" :width :height></canvas>
+      <canvas id="back-ref" ref="back-ref" :width :height class="flip"></canvas>
+    </div>
+    <div>
+      <input type="file" accept="image/*" @change="uploadFrontImage" />
+      <input type="file" accept="image/*" @change="uploadBackImage" />
+    </div>
+    <div>
       <p>
         n: <input v-model.number="n" step="50" type="number" /> Max Iterations:
         <input v-model.number="maxItr" type="number" />
@@ -175,14 +183,6 @@ const onClickSolve = async () => {
           ></line>
         </g>
       </svg>
-    </div>
-    <div>
-      <canvas id="front-ref" ref="front-ref" :width :height></canvas>
-      <canvas id="back-ref" ref="back-ref" :width :height class="flip"></canvas>
-    </div>
-    <div>
-      <input type="file" accept="image/*" @change="uploadFrontImage" />
-      <input type="file" accept="image/*" @change="uploadBackImage" />
     </div>
   </div>
 </template>
