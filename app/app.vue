@@ -38,44 +38,74 @@ const viewBox = computed(() => {
   return `0 0 ${width} ${height}`;
 });
 
+const drawImage = (
+  canvas: HTMLCanvasElement,
+  img: HTMLImageElement,
+  flip: boolean
+) => {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  if (flip) {
+    // Horizontally flip the image
+    ctx.scale(-1, 1);
+    ctx.drawImage(img, -canvas.width, 0, canvas.width, canvas.height);
+    ctx.scale(-1, 1); // Reset scale to normal
+  }
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const ditheredImageData = dither(imageData);
+  ctx.putImageData(ditheredImageData, 0, 0);
+  return imageDataToImg(ditheredImageData);
+};
+
+const uploadFrontImage = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  img.onload = () => {
+    frontImg = drawImage(
+      document.getElementById("front-ref") as HTMLCanvasElement,
+      img,
+      false
+    );
+  };
+};
+
+const uploadBackImage = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  img.onload = () => {
+    backImg = drawImage(
+      document.getElementById("back-ref") as HTMLCanvasElement,
+      img,
+      true
+    );
+  };
+};
+
 onMounted(() => {
   {
     const canvas = document.getElementById("front-ref") as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
     const img = new Image();
     img.src = "/front.png";
     img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const ditheredImageData = dither(imageData);
-      frontImg = imageDataToImg(ditheredImageData);
-      ctx.putImageData(ditheredImageData, 0, 0);
+      frontImg = drawImage(canvas, img, false);
     };
   }
   {
     const canvas = document.getElementById("back-ref") as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
     const img = new Image();
     img.src = "/back.png";
     img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      // Horizontally flip the image
-      ctx.scale(-1, 1);
-      ctx.drawImage(img, -canvas.width, 0, canvas.width, canvas.height);
-      ctx.scale(-1, 1); // Reset scale to normal
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const ditheredImageData = dither(imageData);
-      backImg = imageDataToImg(ditheredImageData);
-      ctx.putImageData(ditheredImageData, 0, 0);
+      backImg = drawImage(canvas, img, true);
     };
   }
-  // answer.value = solve(width, height, frontImg, backImg, n);
 });
 
 const onClickSolve = async () => {
@@ -149,6 +179,10 @@ const onClickSolve = async () => {
     <div>
       <canvas id="front-ref" ref="front-ref" :width :height></canvas>
       <canvas id="back-ref" ref="back-ref" :width :height class="flip"></canvas>
+    </div>
+    <div>
+      <input type="file" accept="image/*" @change="uploadFrontImage" />
+      <input type="file" accept="image/*" @change="uploadBackImage" />
     </div>
   </div>
 </template>
