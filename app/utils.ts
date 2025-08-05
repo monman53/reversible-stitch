@@ -222,7 +222,7 @@ export const solve = async (
       reporter(bestAnswer, iter, bestSimilarity);
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
-    const t = iter / maxItr;
+    const t = 0.2 + 0.8 * (iter / maxItr);
     // Randomly select point and move it to a neighboring point
     const idx = randomInt(0, n - 1);
     const oldPoint = answer[idx];
@@ -287,7 +287,7 @@ export const solve = async (
     const energyDiff = (similarityOld - similarityNew) / (width * height);
     if (
       energyDiff < 0 ||
-      Math.random() < Math.exp(-energyDiff / Math.pow(0.000000001, t))
+      Math.random() < Math.exp(-energyDiff / Math.pow(0.000001, t))
     ) {
       // if (energyDiff < 0) {
       similarityOld = similarityNew;
