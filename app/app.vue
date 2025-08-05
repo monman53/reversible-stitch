@@ -6,7 +6,7 @@ import { dither, solve } from "./utils";
 const width = 200;
 const height = 200;
 const n = ref(1000);
-const maxItr = ref(100000000); // Maximum iterations for the solver
+const maxItr = ref(10000000); // Maximum iterations for the solver
 const currentItr = ref(0); // Current iteration count
 const answer = ref([{ i: 0, j: 0 }]);
 const currentSimilarity = ref(0); // Similarity score
