@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Load image and resize to 200x200 and draw into canvas
 import { onMounted } from "vue";
-import { dither, solve } from "./utils";
+import { dither, solve, type ImageArray } from "./utils";
 
 const width = 200;
 const height = 200;
@@ -12,24 +12,18 @@ const answer = ref([{ i: 0, j: 0 }]);
 const currentSimilarity = ref(0); // Similarity score
 const strokeWidth = ref(1.5); // Stroke width for the lines
 
-let frontImg: number[][] = Array.from({ length: height }, () =>
-  Array(width).fill(0)
-);
-let backImg: number[][] = Array.from({ length: height }, () =>
-  Array(width).fill(0)
-);
+let frontImg: ImageArray = new Int32Array(width * height);
+let backImg: ImageArray = new Int32Array(width * height);
 
-const imageDataToImg = (imageData: ImageData): number[][] => {
-  const img: number[][] = Array.from({ length: height }, () =>
-    Array(width).fill(0)
-  );
+const imageDataToImg = (imageData: ImageData): ImageArray => {
+  const img: ImageArray = new Int32Array(width * height);
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
       const index = (i * width + j) * 4;
       const r = imageData.data[index];
       const g = imageData.data[index + 1];
       const b = imageData.data[index + 2];
-      img[i][j] = r > 128 || g > 128 || b > 128 ? 0 : 1; // Convert to binary
+      img[i * width + j] = r > 128 || g > 128 || b > 128 ? 0 : 1; // Convert to binary
     }
   }
   return img;

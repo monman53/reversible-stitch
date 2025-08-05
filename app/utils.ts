@@ -1,3 +1,5 @@
+export type ImageArray = Int32Array;
+
 // Apply binary Floyd–Steinberg dithering
 export const dither = (imageData: ImageData): ImageData => {
   const data = imageData.data;
@@ -47,8 +49,10 @@ const clop = (value: number, min: number, max: number): number => {
 
 // Draw a line using Bresenham's algorithm
 const drawLine = (
-  img: number[][],
-  refImg: number[][],
+  img: ImageArray,
+  refImg: ImageArray,
+  width: number,
+  height: number,
   i1: number,
   j1: number,
   i2: number,
@@ -62,9 +66,6 @@ const drawLine = (
   const stepI = i1 < i2 ? 1 : -1;
   const stepJ = j1 < j2 ? 1 : -1;
   let err = dj - di;
-  const height = img.length;
-  if (height === 0) return 0;
-  const width = img[0].length;
   let similarityDiff = 0;
   while (true) {
     if (
@@ -74,11 +75,11 @@ const drawLine = (
       currentJ < width
     ) {
       const similarityBefore = -Math.abs(
-        img[currentI][currentJ] - refImg[currentI][currentJ]
+        img[currentI * width + currentJ] - refImg[currentI * width + currentJ]
       );
-      img[currentI][currentJ] += diff;
+      img[currentI * width + currentJ] += diff;
       const similarityAfter = -Math.abs(
-        img[currentI][currentJ] - refImg[currentI][currentJ]
+        img[currentI * width + currentJ] - refImg[currentI * width + currentJ]
       );
       similarityDiff += similarityAfter - similarityBefore;
     }
@@ -99,10 +100,12 @@ const drawLine = (
 };
 
 const drawEdge = (
-  imgFront: number[][],
-  imgBack: number[][],
-  imgFrontRef: number[][],
-  imgBackRef: number[][],
+  imgFront: ImageArray,
+  imgBack: ImageArray,
+  imgFrontRef: ImageArray,
+  imgBackRef: ImageArray,
+  width: number,
+  height: number,
   answer: { i: number; j: number }[],
   idx1: number,
   idx2: number,
@@ -117,6 +120,8 @@ const drawEdge = (
     const similarityDiff = drawLine(
       imgFront,
       imgFrontRef,
+      width,
+      height,
       i1,
       j1,
       i2,
@@ -125,34 +130,40 @@ const drawEdge = (
     );
     return [similarityDiff, 0];
   } else {
-    const similarityDiff = drawLine(imgBack, imgBackRef, i1, j1, i2, j2, diff);
+    const similarityDiff = drawLine(
+      imgBack,
+      imgBackRef,
+      width,
+      height,
+      i1,
+      j1,
+      i2,
+      j2,
+      diff
+    );
     return [0, similarityDiff];
   }
 };
 
 const createImageFromAnswer = (
-  imgFrontRef: number[][],
-  imgBackRef: number[][],
+  imgFrontRef: ImageArray,
+  imgBackRef: ImageArray,
   answer: { i: number; j: number }[],
   width: number,
   height: number
 ): number[][][] => {
-  const imgFront: number[][] = Array.from({ length: height }, () =>
-    Array(width).fill(0)
-  );
-  const imgBack: number[][] = Array.from({ length: height }, () =>
-    Array(width).fill(0)
-  );
-
+  const imgFront: ImageArray = new Int32Array(width * height).fill(0);
+  const imgBack: ImageArray = new Int32Array(width * height).fill(0);
   let frontSim = 0;
   let backSim = 0;
-
   for (let i = 0; i < answer.length - 1; i++) {
     const [dFSim, dBSim] = drawEdge(
       imgFront,
       imgBack,
       imgFrontRef,
       imgBackRef,
+      width,
+      height,
       answer,
       i,
       i + 1,
@@ -174,7 +185,7 @@ const evalSimilarity = (
   let similarity = 0;
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
-      similarity += -Math.abs(img1[i][j] - img2[i][j]);
+      similarity += -Math.abs(img1[i * width + j] - img2[i * width + j]);
     }
   }
   return similarity;
@@ -183,8 +194,8 @@ const evalSimilarity = (
 export const solve = async (
   width: number,
   height: number,
-  frontImg: number[][],
-  backImg: number[][],
+  frontImg: ImageArray,
+  backImg: ImageArray,
   n: number,
   maxItr: number = 1000000,
   reporter: (
@@ -239,6 +250,8 @@ export const solve = async (
       imgBack,
       frontImg,
       backImg,
+      width,
+      height,
       answer,
       idx - 1,
       idx,
@@ -249,6 +262,8 @@ export const solve = async (
       imgBack,
       frontImg,
       backImg,
+      width,
+      height,
       answer,
       idx,
       idx + 1,
@@ -262,6 +277,8 @@ export const solve = async (
       imgBack,
       frontImg,
       backImg,
+      width,
+      height,
       answer,
       idx - 1,
       idx,
@@ -272,6 +289,8 @@ export const solve = async (
       imgBack,
       frontImg,
       backImg,
+      width,
+      height,
       answer,
       idx,
       idx + 1,
@@ -300,11 +319,55 @@ export const solve = async (
       }
     } else {
       // Otherwise, revert the change
-      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, -1); // Revert new edge
-      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx, idx + 1, -1); // Revert new edge
+      drawEdge(
+        imgFront,
+        imgBack,
+        frontImg,
+        backImg,
+        width,
+        height,
+        answer,
+        idx - 1,
+        idx,
+        -1
+      ); // Revert new edge
+      drawEdge(
+        imgFront,
+        imgBack,
+        frontImg,
+        backImg,
+        width,
+        height,
+        answer,
+        idx,
+        idx + 1,
+        -1
+      ); // Revert new edge
       answer[idx] = oldPoint; // Revert the change
-      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx - 1, idx, +1); // Re-add old edge
-      drawEdge(imgFront, imgBack, frontImg, backImg, answer, idx, idx + 1, +1); // Re-add old edge
+      drawEdge(
+        imgFront,
+        imgBack,
+        frontImg,
+        backImg,
+        width,
+        height,
+        answer,
+        idx - 1,
+        idx,
+        +1
+      ); // Re-add old edge
+      drawEdge(
+        imgFront,
+        imgBack,
+        frontImg,
+        backImg,
+        width,
+        height,
+        answer,
+        idx,
+        idx + 1,
+        +1
+      ); // Re-add old edge
     }
   }
 
