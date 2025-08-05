@@ -10,6 +10,7 @@ const maxItr = ref(10000000); // Maximum iterations for the solver
 const currentItr = ref(0); // Current iteration count
 const answer = ref([{ i: 0, j: 0 }]);
 const currentSimilarity = ref(0); // Similarity score
+const strokeWidth = ref(1.5); // Stroke width for the lines
 
 let frontImg: number[][] = Array.from({ length: height }, () =>
   Array(width).fill(0)
@@ -179,10 +180,21 @@ const onClickSolve = async () => {
             :y1="answer[index-1]!.i"
             :x2="answer[index]!.j"
             :y2="answer[index]!.i"
-            :stroke="index % 2 === 0 ? '#ff000088' : '#0000ff88'"
+            :stroke="index % 2 === 0 ? '#ff000044' : '#0000ff44'"
           ></line>
         </g>
       </svg>
+    </div>
+    <div>
+      <label for="stroke-width">Stroke Width:</label>
+      <input
+        id="stroke-width"
+        v-model.number="strokeWidth"
+        type="range"
+        step="0.01"
+        min="0.01"
+        max="2"
+      />
     </div>
   </div>
 </template>
@@ -199,7 +211,7 @@ svg {
   border: 1px solid black;
 }
 line {
-  stroke-width: 0.7;
+  stroke-width: v-bind(strokeWidth);
   stroke-linecap: round;
 }
 
