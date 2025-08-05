@@ -65,6 +65,10 @@ onMounted(() => {
     img.onload = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Horizontally flip the image
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, -canvas.width, 0, canvas.width, canvas.height);
+      ctx.scale(-1, 1); // Reset scale to normal
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const ditheredImageData = dither(imageData);
       backImg = imageDataToImg(ditheredImageData);
@@ -117,7 +121,7 @@ const onClickSolve = async () => {
           ></line>
         </g>
       </svg>
-      <svg :viewBox="viewBox">
+      <svg :viewBox="viewBox" class="flip">
         <g v-for="(item, index) in answer" :key="index">
           <line
             v-if="index > 0 && index % 2 === 0"
@@ -144,7 +148,7 @@ const onClickSolve = async () => {
     </div>
     <div>
       <canvas id="front-ref" ref="front-ref" :width :height></canvas>
-      <canvas id="back-ref" ref="back-ref" :width :height></canvas>
+      <canvas id="back-ref" ref="back-ref" :width :height class="flip"></canvas>
     </div>
   </div>
 </template>
@@ -163,5 +167,9 @@ svg {
 line {
   stroke-width: 0.7;
   stroke-linecap: round;
+}
+
+.flip {
+  transform: scaleX(-1);
 }
 </style>
