@@ -93,7 +93,7 @@ onMounted(() => {
   {
     const canvas = document.getElementById("front-ref") as HTMLCanvasElement;
     const img = new Image();
-    img.src = "/front.png";
+    img.src = "/reversible-stitch/front.png";
     img.onload = () => {
       frontImg = drawImage(canvas, img, false);
     };
@@ -101,7 +101,7 @@ onMounted(() => {
   {
     const canvas = document.getElementById("back-ref") as HTMLCanvasElement;
     const img = new Image();
-    img.src = "/back.png";
+    img.src = "/reversible-stitch/back.png";
     img.onload = () => {
       backImg = drawImage(canvas, img, true);
     };
