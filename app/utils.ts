@@ -9,7 +9,8 @@ export const dither = (imageData: ImageData): ImageData => {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const index = (y * width + x) * 4;
-      const oldPixel = (data[index] + data[index + 1] + data[index + 2]) / 3.0; // Average R, G, B
+      const oldPixel =
+        (data[index]! + data[index + 1]! + data[index + 2]!) / 3.0; // Average R, G, B
       //   const oldPixel = data[index];
       const newPixel = oldPixel < 128 ? 0 : 255;
       data[index] = newPixel; // R
@@ -18,12 +19,12 @@ export const dither = (imageData: ImageData): ImageData => {
       data[index + 3] = 255; // A
 
       const error = oldPixel - newPixel;
-      if (x + 1 < width) data[index + 4] += (error * 7) / 16; // right
+      if (x + 1 < width) data[index + 4]! += (error * 7) / 16; // right
       if (x - 1 >= 0 && y + 1 < height)
-        data[index + width * 4 - 4] += (error * 3) / 16; // bottom left
-      if (y + 1 < height) data[index + width * 4] += (error * 5) / 16; // bottom
+        data[index + width * 4 - 4]! += (error * 3) / 16; // bottom left
+      if (y + 1 < height) data[index + width * 4]! += (error * 5) / 16; // bottom
       if (x + 1 < width && y + 1 < height)
-        data[index + width * 4 + 4] += (error * 1) / 16; // bottom right
+        data[index + width * 4 + 4]! += (error * 1) / 16; // bottom right
     }
   }
 
@@ -75,11 +76,11 @@ const drawLine = (
       currentJ < width
     ) {
       const similarityBefore = -Math.abs(
-        img[currentI * width + currentJ] - refImg[currentI * width + currentJ]
+        img[currentI * width + currentJ]! - refImg[currentI * width + currentJ]!
       );
-      img[currentI * width + currentJ] += diff;
+      img[currentI * width + currentJ]! += diff;
       const similarityAfter = -Math.abs(
-        img[currentI * width + currentJ] - refImg[currentI * width + currentJ]
+        img[currentI * width + currentJ]! - refImg[currentI * width + currentJ]!
       );
       similarityDiff += similarityAfter - similarityBefore;
     }
@@ -114,8 +115,8 @@ const drawEdge = (
   if (idx1 < 0 || idx2 < 0 || idx1 >= answer.length || idx2 >= answer.length) {
     return [0, 0];
   }
-  const { i: i1, j: j1 } = answer[idx1];
-  const { i: i2, j: j2 } = answer[idx2];
+  const { i: i1, j: j1 } = answer[idx1]!;
+  const { i: i2, j: j2 } = answer[idx2]!;
   if (idx1 % 2 === 0) {
     const similarityDiff = drawLine(
       imgFront,
@@ -151,13 +152,14 @@ const createImageFromAnswer = (
   answer: { i: number; j: number }[],
   width: number,
   height: number
-): number[][][] => {
+): ImageArray[] => {
   const imgFront: ImageArray = new Int32Array(width * height).fill(0);
   const imgBack: ImageArray = new Int32Array(width * height).fill(0);
-  let frontSim = 0;
-  let backSim = 0;
+  //   let frontSim = 0;
+  //   let backSim = 0;
   for (let i = 0; i < answer.length - 1; i++) {
-    const [dFSim, dBSim] = drawEdge(
+    // const [dFSim, dBSim] = drawEdge(
+    drawEdge(
       imgFront,
       imgBack,
       imgFrontRef,
@@ -169,23 +171,23 @@ const createImageFromAnswer = (
       i + 1,
       +1
     );
-    frontSim += dFSim;
-    backSim += dBSim;
+    // frontSim += dFSim;
+    // backSim += dBSim;
   }
 
-  return [imgFront, imgBack, frontSim, backSim];
+  return [imgFront, imgBack];
 };
 
 const evalSimilarity = (
-  img1: number[][],
-  img2: number[][],
+  img1: ImageArray,
+  img2: ImageArray,
   width: number,
   height: number
 ): number => {
   let similarity = 0;
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
-      similarity += -Math.abs(img1[i * width + j] - img2[i * width + j]);
+      similarity += -Math.abs(img1[i * width + j]! - img2[i * width + j]!);
     }
   }
   return similarity;
@@ -211,7 +213,8 @@ export const solve = async (
   }
   const bestAnswer = answer.map((p) => ({ ...p })); // Keep a copy of the best answer
   // Create images from the answer
-  let [imgFront, imgBack, frontSim, backSim] = createImageFromAnswer(
+  //   let [imgFront, imgBack, frontSim, backSim] = createImageFromAnswer(
+  const [imgFront, imgBack] = createImageFromAnswer(
     frontImg,
     backImg,
     answer,
@@ -219,12 +222,17 @@ export const solve = async (
     height
   );
   const frontSimilarityInitial = evalSimilarity(
-    imgFront,
+    imgFront!,
     frontImg,
     width,
     height
   );
-  const backSimilarityInitial = evalSimilarity(imgBack, backImg, width, height);
+  const backSimilarityInitial = evalSimilarity(
+    imgBack!,
+    backImg,
+    width,
+    height
+  );
   let similarityOld = frontSimilarityInitial + backSimilarityInitial;
   let bestSimilarity = similarityOld;
 
@@ -236,7 +244,7 @@ export const solve = async (
     const t = 0.2 + 0.8 * (iter / maxItr);
     // Randomly select point and move it to a neighboring point
     const idx = randomInt(0, n - 1);
-    const oldPoint = answer[idx];
+    const oldPoint = answer[idx]!;
     const stdDev = (1 - t) * 15 + 2;
     // const stdDev = 20;
     const newPoint = {
@@ -246,8 +254,8 @@ export const solve = async (
       //   j: randomInt(0, width - 1),
     };
     const [dBeforeSimFront1, dBeforeSimBack1] = drawEdge(
-      imgFront,
-      imgBack,
+      imgFront!,
+      imgBack!,
       frontImg,
       backImg,
       width,
@@ -258,8 +266,8 @@ export const solve = async (
       -1
     ); // Remove old edge
     const [dBeforeSimFront2, dBeforeSimBack2] = drawEdge(
-      imgFront,
-      imgBack,
+      imgFront!,
+      imgBack!,
       frontImg,
       backImg,
       width,
@@ -269,12 +277,12 @@ export const solve = async (
       idx + 1,
       -1
     ); // Remove old edge
-    const dBeforeSimFront = dBeforeSimFront1 + dBeforeSimFront2;
-    const dBeforeSimBack = dBeforeSimBack1 + dBeforeSimBack2;
+    const dBeforeSimFront = dBeforeSimFront1! + dBeforeSimFront2!;
+    const dBeforeSimBack = dBeforeSimBack1! + dBeforeSimBack2!;
     answer[idx] = newPoint;
     const [dAfterSimFront1, dAfterSimBack1] = drawEdge(
-      imgFront,
-      imgBack,
+      imgFront!,
+      imgBack!,
       frontImg,
       backImg,
       width,
@@ -285,8 +293,8 @@ export const solve = async (
       +1
     ); // Add new edge
     const [dAfterSimFront2, dAfterSimBack2] = drawEdge(
-      imgFront,
-      imgBack,
+      imgFront!,
+      imgBack!,
       frontImg,
       backImg,
       width,
@@ -296,8 +304,8 @@ export const solve = async (
       idx + 1,
       +1
     ); // Add new edge
-    const dAfterSimFront = dAfterSimFront1 + dAfterSimFront2;
-    const dAfterSimBack = dAfterSimBack1 + dAfterSimBack2;
+    const dAfterSimFront = dAfterSimFront1! + dAfterSimFront2!;
+    const dAfterSimBack = dAfterSimBack1! + dAfterSimBack2!;
     const frontSimilarityNew = dBeforeSimFront + dAfterSimFront;
     const backSimilarityNew = dBeforeSimBack + dAfterSimBack;
     const similarityNew =
@@ -313,15 +321,15 @@ export const solve = async (
       if (similarityNew > bestSimilarity) {
         bestSimilarity = similarityNew;
         bestAnswer.forEach((p, i) => {
-          p.i = answer[i].i;
-          p.j = answer[i].j;
+          p.i = answer[i]!.i;
+          p.j = answer[i]!.j;
         });
       }
     } else {
       // Otherwise, revert the change
       drawEdge(
-        imgFront,
-        imgBack,
+        imgFront!,
+        imgBack!,
         frontImg,
         backImg,
         width,
@@ -332,8 +340,8 @@ export const solve = async (
         -1
       ); // Revert new edge
       drawEdge(
-        imgFront,
-        imgBack,
+        imgFront!,
+        imgBack!,
         frontImg,
         backImg,
         width,
@@ -345,8 +353,8 @@ export const solve = async (
       ); // Revert new edge
       answer[idx] = oldPoint; // Revert the change
       drawEdge(
-        imgFront,
-        imgBack,
+        imgFront!,
+        imgBack!,
         frontImg,
         backImg,
         width,
@@ -357,8 +365,8 @@ export const solve = async (
         +1
       ); // Re-add old edge
       drawEdge(
-        imgFront,
-        imgBack,
+        imgFront!,
+        imgBack!,
         frontImg,
         backImg,
         width,

@@ -20,9 +20,9 @@ const imageDataToImg = (imageData: ImageData): ImageArray => {
   for (let i = 0; i < height; i++) {
     for (let j = 0; j < width; j++) {
       const index = (i * width + j) * 4;
-      const r = imageData.data[index];
-      const g = imageData.data[index + 1];
-      const b = imageData.data[index + 2];
+      const r = imageData.data[index]!;
+      const g = imageData.data[index + 1]!;
+      const b = imageData.data[index + 2]!;
       img[i * width + j] = r > 128 || g > 128 || b > 128 ? 0 : 1; // Convert to binary
     }
   }
@@ -37,9 +37,9 @@ const drawImage = (
   canvas: HTMLCanvasElement,
   img: HTMLImageElement,
   flip: boolean
-) => {
+): ImageArray => {
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) return new Int32Array(width * height).fill(0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   if (flip) {
@@ -58,6 +58,7 @@ const uploadFrontImage = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
+  if (!file) return;
   const img = new Image();
   img.src = URL.createObjectURL(file);
   img.onload = () => {
@@ -73,6 +74,7 @@ const uploadBackImage = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
+  if (!file) return;
   const img = new Image();
   img.src = URL.createObjectURL(file);
   img.onload = () => {
