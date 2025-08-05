@@ -171,13 +171,18 @@ const evalSimilarity = (
   return similarity;
 };
 
-export const solve = (
+export const solve = async (
   width: number,
   height: number,
   frontImg: number[][],
   backImg: number[][],
   n: number,
-  maxItr: number = 10000000
+  maxItr: number = 1000000,
+  reporter: (
+    bestAnswer: { i: number; j: number }[],
+    iter: number,
+    similarity: number
+  ) => void
 ) => {
   // Inisialize answer with random positions
   const answer: { i: number; j: number }[] = [];
@@ -205,7 +210,8 @@ export const solve = (
 
   for (let iter = 0; iter < maxItr; iter++) {
     if (iter % 10000 === 0) {
-      console.log(`Iteration ${iter}, Similarity: ${bestSimilarity}`);
+      reporter(bestAnswer, iter, bestSimilarity);
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
     // Randomly select point and move it to a neighboring point
     const idx = randomInt(0, n - 1);
@@ -270,7 +276,7 @@ export const solve = (
     if (
       energyDiff < 0 ||
       Math.random() <
-        Math.exp(-energyDiff / Math.pow(0.00000001, iter / maxItr))
+        Math.exp(-energyDiff / Math.pow(0.000000001, iter / maxItr))
     ) {
       // if (energyDiff < 0) {
       similarityOld = similarityNew;
