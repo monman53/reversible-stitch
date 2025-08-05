@@ -32,6 +32,15 @@ const randomInt = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+const randomNormal = (mean: number, stdDev: number): number => {
+  let u = 0,
+    v = 0;
+  while (u === 0) u = Math.random(); // Converting [0, 1) to (0, 1)
+  while (v === 0) v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  return z * stdDev + mean;
+};
+
 const clop = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
 };
@@ -216,11 +225,12 @@ export const solve = async (
     // Randomly select point and move it to a neighboring point
     const idx = randomInt(0, n - 1);
     const oldPoint = answer[idx];
+    const stdDev = 20; // Adjust the standard deviation as needed
     const newPoint = {
-      //   i: clop(oldPoint.i + randomInt(-1, 1), 0, height - 1),
-      //   j: clop(oldPoint.j + randomInt(-1, 1), 0, width - 1),
-      i: randomInt(0, height - 1),
-      j: randomInt(0, width - 1),
+      i: clop(Math.round(randomNormal(oldPoint.i, stdDev)), 0, height - 1),
+      j: clop(Math.round(randomNormal(oldPoint.j, stdDev)), 0, width - 1),
+      //   i: randomInt(0, height - 1),
+      //   j: randomInt(0, width - 1),
     };
     const [dBeforeSimFront1, dBeforeSimBack1] = drawEdge(
       imgFront,
